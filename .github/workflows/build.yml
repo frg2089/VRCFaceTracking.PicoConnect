@@ -13,8 +13,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           submodules: recursive
-        #   lfs: true # 仓库内没有使用LFS
-        #   fetch-depth: 0 # 用 GitVersion 才会用到
+          fetch-depth: 0
 
       - name: 配置 .Net 环境
         uses: actions/setup-dotnet@v4.0.0
