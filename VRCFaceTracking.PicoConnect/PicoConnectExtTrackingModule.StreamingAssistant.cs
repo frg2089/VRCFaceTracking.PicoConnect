@@ -48,13 +48,14 @@ public partial class PicoConnectExtTrackingModule
             && registry.GetValue("InstallLocation") is string basePath)
         {
             exePath = Path.Combine(basePath, StreamingAssistantExe);
-            var conf = Path.Combine(basePath, "driver", "bin", "win64", "Tracking.ini");
-            if (File.Exists(conf))
-            {
-                var data = File.ReadAllLines(conf).FirstOrDefault(i => i.StartsWith("driverport"))?.Split('=');
-                if (data is not null and { Length: > 1 } && ushort.TryParse(data[1], out var port))
-                    _port = port;
-            }
+            // TODO: 这个 driverport 是干什么用的
+            //var conf = Path.Combine(basePath, "driver", "bin", "win64", "Tracking.ini");
+            //if (File.Exists(conf))
+            //{
+            //    var data = File.ReadAllLines(conf).FirstOrDefault(i => i.StartsWith("driverport"))?.Split('=');
+            //    if (data is not null and { Length: > 1 } && ushort.TryParse(data[1], out var port))
+            //        _port = port;
+            //}
         }
 
         if (File.Exists(exePath))
