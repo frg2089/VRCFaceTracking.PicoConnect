@@ -1,0 +1,7 @@
+<Project>
+  <!-- 隐藏来自 VRCFaceTracking.Core 的所有警告 -->
+  <!-- 告诉我干啥，我也改不了 -->
+  <PropertyGroup Condition="'$(MSBuildProjectName)' == 'VRCFaceTracking.Core'">
+    <WarningLevel>0</WarningLevel>
+  </PropertyGroup>
+</Project>
