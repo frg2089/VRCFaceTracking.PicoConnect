@@ -226,7 +226,7 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
     [LoggerMessage(4, LogLevel.Information, "Expression Tracking already in use, disabling expression data.")]
     private partial void LogDisabledExpression();
 
-    [LoggerMessage(5, LogLevel.Information, "Data was not sent within the timeout.")]
+    [LoggerMessage(5, LogLevel.Debug, "Data was not sent within the timeout.")]
     private partial void LogSocketException(SocketException exception);
 
     [LoggerMessage(6, LogLevel.Information, "Teardown.")]
