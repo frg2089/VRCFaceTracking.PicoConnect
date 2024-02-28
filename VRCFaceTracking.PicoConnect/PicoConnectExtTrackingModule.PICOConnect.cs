@@ -87,13 +87,11 @@ public partial class PicoConnectExtTrackingModule
 
                 switch (picoConfig?.Lab.FaceTrackingTransferProtocol)
                 {
+                    // TODO: 旧协议有部分内容与现行协议不同
+                    // see https://github.com/regzo2/PicoStreamingAssistantFTUDP/pull/6/files
                     case 1:
-                        // TODO: 旧协议有部分内容与现行协议不同
-                        // see https://github.com/regzo2/PicoStreamingAssistantFTUDP/pull/6/files
-                        _port = 29763;
-                        break;
                     case 2:
-                        _port = 29765;
+                        _faceTrackingTransferProtocol = picoConfig.Lab.FaceTrackingTransferProtocol;
                         break;
                     default:
                         LogUnknownPICOConnectProtocol(conf);

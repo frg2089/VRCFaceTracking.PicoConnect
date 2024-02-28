@@ -8,12 +8,24 @@ public partial class PicoConnectExtTrackingModule
     {
         fixed (byte* ptr = bytes)
         {
-            if (((TrackingDataHeader*)ptr)->TrackingType is not 2)
-                return false; // not facetracking packet
+            switch (_faceTrackingTransferProtocol)
+            {
+                // hasHeader
+                //case 1:
+                //    _data = *(PxrFTInfo*)(ptr + sizeof(ushort));
+                //    return true;
+                case 1:
+                    _data = *(PxrFTInfo*)ptr;
+                    return true;
+                case 2:
+                default:
+                    if (((TrackingDataHeader*)ptr)->TrackingType is not 2)
+                        return false; // not facetracking packet
 
-            _data = *(PxrFTInfo*)(ptr + TrackingDataHeader.Size);
+                    _data = *(PxrFTInfo*)(ptr + TrackingDataHeader.Size);
+                    return true;
+            }
         }
-        return true;
     }
 
     private unsafe void UpdateFromPxrFTInfo()

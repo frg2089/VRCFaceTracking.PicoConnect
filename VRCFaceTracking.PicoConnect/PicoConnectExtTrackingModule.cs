@@ -12,12 +12,12 @@ namespace VRCFaceTracking.PicoConnect;
 public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
 {
     private PICOMode _mode;
-    private ushort _port = 29765;
     private UdpClient? _client;
     private bool _eyeAvailable;
     private bool _expressionAvailable;
     private PxrFTInfo _data;
     private CancellationTokenSource? _cancellation;
+    private int _faceTrackingTransferProtocol = 2;
 
     public override (bool SupportsEye, bool SupportsExpression) Supported => (true, true);
 
@@ -104,9 +104,16 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
     {
         try
         {
-            _client = new(_port);
+            ushort port = _faceTrackingTransferProtocol switch
+            {
+                1 => 29763,
+                2 => 29765,
+                _ => 29765,
+            };
+
+            _client = new(port);
             _client.Client.ReceiveTimeout = 5000;
-            LogInfo(_port, _client.Client.ReceiveTimeout);
+            LogInfo(port, _client.Client.ReceiveTimeout, _faceTrackingTransferProtocol);
 
             return true;
         }
@@ -167,8 +174,8 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
     [LoggerMessage(1, LogLevel.Information, "Skip the initialization because can't found the streaming tool.")]
     private partial void LogNoStreamingTool();
 
-    [LoggerMessage(2, LogLevel.Information, "Host end-point: {port}.\r\nInitialization Timeout: {timeout}ms.")]
-    private partial void LogInfo(ushort port, int timeout);
+    [LoggerMessage(2, LogLevel.Information, "Host end-point: {port}.\r\nInitialization Timeout: {timeout}ms.\r\nFaceTrackingTransferProtocol Version: {faceTrackingTransferProtocol}")]
+    private partial void LogInfo(ushort port, int timeout, int faceTrackingTransferProtocol);
 
     [LoggerMessage(3, LogLevel.Information, "Eye tracking already in use, disabling eye data.")]
     private partial void LogDisabledEye();
