@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Versioning;
 
@@ -11,12 +12,14 @@ namespace VRCFaceTracking.PicoConnect;
 [SupportedOSPlatform("windows")]
 public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
 {
+    private Thread? _thread;
+    private AutoResetEvent _autoReset = new(false);
     private PICOMode _mode;
     private UdpClient? _client;
+    private IPEndPoint? _endPoint;
     private bool _eyeAvailable;
     private bool _expressionAvailable;
     private PxrFTInfo _data;
-    private CancellationTokenSource? _cancellation;
     private int _faceTrackingTransferProtocol = 2;
 
     public override (bool SupportsEye, bool SupportsExpression) Supported => (true, true);
@@ -42,7 +45,13 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
             return (false, false);
         }
 
-        _cancellation = new();
+
+        _thread = new(UpdateThread)
+        {
+            Name = "UpdateThread",
+        };
+        _thread.Start();
+
         int retry = 0;
         while (!Initialize())
         {
@@ -55,10 +64,15 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
             Task.Delay(retry * 1000).Wait();
         }
 
+
         ModuleInformation.Name = "Pico 4 Pro / Enterprise";
 
         if (typeof(PicoConnectExtTrackingModule).Assembly.GetManifestResourceStream("hmd") is Stream stream)
+        {
+            // 它可能为null
+            ModuleInformation.StaticImages ??= new(1);
             ModuleInformation.StaticImages.Insert(0, stream);
+        }
 
         if (!eyeAvailable)
             LogDisabledEye();
@@ -70,24 +84,46 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
 
     public override void Teardown()
     {
-        _cancellation?.Cancel();
-        _cancellation = null;
+        LogTeardown();
+        _endPoint = null;
         _client?.Dispose();
         _client = null;
     }
 
-    public override async void Update()
+    private ModuleState _lastState = ModuleState.Uninitialized;
+    public override void Update()
     {
-        if (Status is not ModuleState.Active || _client is null || _cancellation is null)
+        if (Status != _lastState)
         {
+            LogActiveChange(Status is ModuleState.Active);
+        }
+
+        if (Status is not ModuleState.Active)
+        {
+            _lastState = Status;
             Thread.Sleep(100);
             return;
         }
 
+        _lastState = ModuleState.Active;
+        _autoReset.Set();
+    }
+
+    private void UpdateThread()
+    {
+        while (true)
+        {
+            _autoReset.WaitOne();
+            UpdateCore();
+            _autoReset.Reset();
+        }
+    }
+
+    private void UpdateCore()
+    {
         try
         {
-            var result = await _client.ReceiveAsync(_cancellation.Token).ConfigureAwait(false);
-            if (ParsePxrData(result.Buffer))
+            if (ParsePxrData(_client!.Receive(ref _endPoint)))
                 UpdateFromPxrFTInfo();
         }
         catch (SocketException ex) when (ex.ErrorCode is 10060)
@@ -111,9 +147,16 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
                 _ => 29765,
             };
 
-            _client = new(port);
-            _client.Client.ReceiveTimeout = 5000;
-            LogInfo(port, _client.Client.ReceiveTimeout, _faceTrackingTransferProtocol);
+            _client = new(port)
+            {
+                Client =
+                {
+                    ReceiveTimeout = 5000
+                }
+            };
+            _endPoint = new(IPAddress.Loopback, port);
+
+            LogInfo(_endPoint, _client.Client.ReceiveTimeout, _faceTrackingTransferProtocol);
 
             return true;
         }
@@ -155,17 +198,17 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
         Process proc = new()
         {
             StartInfo =
-                {
-                    FileName = exePath,
-                    UseShellExecute = true,
-                }
+            {
+                FileName = exePath,
+                UseShellExecute = true,
+            }
         };
 
         return proc.Start();
     }
 
 
-    [LoggerMessage(-1, LogLevel.Warning, "An uncaught exception occurred.")]
+    [LoggerMessage(-1, LogLevel.Warning, message: "An uncaught exception occurred.")]
     private partial void LogException(Exception exception);
 
     [LoggerMessage(0, LogLevel.Information, "Skip the initialization as it is not available now.")]
@@ -174,15 +217,21 @@ public sealed partial class PicoConnectExtTrackingModule : ExtTrackingModule
     [LoggerMessage(1, LogLevel.Information, "Skip the initialization because can't found the streaming tool.")]
     private partial void LogNoStreamingTool();
 
-    [LoggerMessage(2, LogLevel.Information, "Host end-point: {port}.\r\nInitialization Timeout: {timeout}ms.\r\nFaceTrackingTransferProtocol Version: {faceTrackingTransferProtocol}")]
-    private partial void LogInfo(ushort port, int timeout, int faceTrackingTransferProtocol);
+    [LoggerMessage(2, LogLevel.Information, "Host end-point: {endPoint}.\r\nInitialization Timeout: {timeout}ms.\r\nFaceTrackingTransferProtocol Version: {faceTrackingTransferProtocol}")]
+    private partial void LogInfo(EndPoint endPoint, int timeout, int faceTrackingTransferProtocol);
 
     [LoggerMessage(3, LogLevel.Information, "Eye tracking already in use, disabling eye data.")]
     private partial void LogDisabledEye();
 
     [LoggerMessage(4, LogLevel.Information, "Expression Tracking already in use, disabling expression data.")]
     private partial void LogDisabledExpression();
+
     [LoggerMessage(5, LogLevel.Information, "Data was not sent within the timeout.")]
     private partial void LogSocketException(SocketException exception);
 
+    [LoggerMessage(6, LogLevel.Information, "Teardown.")]
+    private partial void LogTeardown();
+
+    [LoggerMessage(7, LogLevel.Information, "ActiveChange: {active}.")]
+    private partial void LogActiveChange(bool active);
 }

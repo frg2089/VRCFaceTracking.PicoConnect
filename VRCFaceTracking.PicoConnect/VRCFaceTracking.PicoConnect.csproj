@@ -25,4 +25,16 @@
     <ProjectReference Include="..\VRCFaceTracking\VRCFaceTracking.Core\VRCFaceTracking.Core.csproj" Private="False" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <ContinuousIntegrationBuild Condition="'$(TF_BUILD)' == 'true'">true</ContinuousIntegrationBuild>
+    <ContinuousIntegrationBuild Condition="'$(GITHUB_ACTIONS)' == 'true'">true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <Target Name="PostBuild" AfterTargets="Build" Condition="'$(ContinuousIntegrationBuild)' != 'true'">
+    <ItemGroup>
+      <_OutoutFile Include="$(OutputPath)*.*"/>
+    </ItemGroup>
+    <Copy SourceFiles="@(_OutoutFile)" DestinationFolder="$(APPDATA)\VRCFaceTracking\CustomLibs\" OverwriteReadOnlyFiles="True" SkipUnchangedFiles="True" />
+  </Target>
+
 </Project>
