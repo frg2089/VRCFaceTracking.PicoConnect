@@ -11,7 +11,8 @@ jobs:
     steps:
       - name: 签出仓库
         uses: actions/checkout@v4
-        # with:
+        with:
+          submodules: recursive
         #   lfs: true # 仓库内没有使用LFS
         #   fetch-depth: 0 # 用 GitVersion 才会用到
 
