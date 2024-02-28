@@ -26,7 +26,8 @@ public partial class PicoConnectExtTrackingModule
     /// <remarks>
     /// >= ^9.4.15.2 && < ^10.0.0
     /// <br/>
-    /// Note: 最低的支持眼追的串流助手的版本号尚不明确
+    /// Note: 最低的支持眼追的串流助手的版本号尚不明确<br/>
+    /// Note: 不同版本用的端口好像也不一样<br/>
     /// </remarks>
     private void CheckStreamingAssistant()
     {
@@ -45,7 +46,16 @@ public partial class PicoConnectExtTrackingModule
         if (Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall") is RegistryKey uninstall
             && uninstall.OpenSubKey(StreamingAssistantRegistryKey) is RegistryKey registry
             && registry.GetValue("InstallLocation") is string basePath)
+        {
             exePath = Path.Combine(basePath, StreamingAssistantExe);
+            var conf = Path.Combine(basePath, "driver", "bin", "win64", "Tracking.ini");
+            if (File.Exists(conf))
+            {
+                var data = File.ReadAllLines(conf).FirstOrDefault(i => i.StartsWith("driverport"))?.Split('=');
+                if (data is not null and { Length: > 1 } && ushort.TryParse(data[1], out var port))
+                    _port = port;
+            }
+        }
 
         if (File.Exists(exePath))
         {
