@@ -1,3 +1,8 @@
+# Bigger! Better! Stronger! [regzo2/PicoStreamingAssistantFTUDP](https://github.com/regzo2/PicoStreamingAssistantFTUDP)
+
+> [!important]
+> [regzo2/PicoStreamingAssistantFTUDP](https://github.com/regzo2/PicoStreamingAssistantFTUDP) 现在足够强大了，这个项目也将没必要存在了。
+
 # VRCFaceTracking.PicoConnect
 
 > [!caution]
@@ -5,8 +10,7 @@
 > 如果你不知道如何使用这个项目，也请不要使用它。
 
 > [!important]
-> 这个项目预计不会得到积极维护。
-> 若您有精力和兴趣且愿意接手提供后续维护，请联系我。
+> 这个项目确实不会得到维护。
 
 ## 开发
 
